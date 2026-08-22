@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# Environment variables
+.env
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Artifacts generated during runs
+artifacts/runs/*.json
+!artifacts/runs/.gitkeep
+artifacts/escalations/*.json
+artifacts/escalations/*.md
+!artifacts/escalations/.gitkeep
