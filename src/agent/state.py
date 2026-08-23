@@ -37,12 +37,14 @@ class CaseworkerState(TypedDict, total=False):
     approval_token: Optional[Dict[str, Any]]
     execution_result: Optional[Dict[str, Any]]
     escalation_artifact: Optional[Dict[str, Any]]
+    handoff_artifact: Optional[Dict[str, Any]]
 
     # Results Tracking
     completed_referrals: List[str]
     approved_referrals: List[str]
     rejected_referrals: List[str]
     escalated_referrals: List[str]
+    handoff_referrals: List[str]
     failed_referrals: List[str]
     
     # Audit Trace

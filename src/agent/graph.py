@@ -14,6 +14,8 @@ from src.agent.nodes import (
     load_referrals_node,
     select_next_referral_node,
     fetch_history_node,
+    check_household_policy_node,
+    create_handoff_node,
     analyze_referral_node,
     draft_triage_note_node,
     evaluate_policy_node,
@@ -45,6 +47,8 @@ def build_caseworker_graph(
     builder.add_node("load_referrals", lambda state: load_referrals_node(state, audit_logger))
     builder.add_node("select_next_referral", lambda state: select_next_referral_node(state, audit_logger))
     builder.add_node("fetch_history", lambda state: fetch_history_node(state, history_client, audit_logger))
+    builder.add_node("check_household_policy", lambda state: check_household_policy_node(state, policy_engine, audit_logger))
+    builder.add_node("create_handoff", lambda state: create_handoff_node(state, audit_logger))
     builder.add_node("analyze_referral", lambda state: analyze_referral_node(state, audit_logger))
     builder.add_node("draft_triage_note", lambda state: draft_triage_note_node(state, audit_logger))
     builder.add_node("evaluate_policy", lambda state: evaluate_policy_node(state, policy_engine, audit_logger))
@@ -78,17 +82,34 @@ def build_caseworker_graph(
     def route_history_result(state: CaseworkerState) -> str:
         if state.get("resident_history") is None:
             return "prepare_next_referral"
-        return "analyze_referral"
+        return "check_household_policy"
 
     builder.add_conditional_edges(
         "fetch_history",
         route_history_result,
         {
             "prepare_next_referral": "prepare_next_referral",
+            "check_household_policy": "check_household_policy",
+        },
+    )
+
+    # Conditional router for Section 3.9 restriction rule
+    def route_household_policy_result(state: CaseworkerState) -> str:
+        pol_dict = state.get("policy_decision")
+        if pol_dict and pol_dict.get("decision") == PolicyDecisionEnum.HANDOFF_REQUIRED.value:
+            return "create_handoff"
+        return "analyze_referral"
+
+    builder.add_conditional_edges(
+        "check_household_policy",
+        route_household_policy_result,
+        {
+            "create_handoff": "create_handoff",
             "analyze_referral": "analyze_referral",
         },
     )
 
+    builder.add_edge("create_handoff", "prepare_next_referral")
     builder.add_edge("analyze_referral", "draft_triage_note")
     builder.add_edge("draft_triage_note", "evaluate_policy")
 

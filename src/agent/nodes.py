@@ -72,6 +72,7 @@ def load_referrals_node(state: CaseworkerState, audit_logger: AuditLogger) -> Di
         "approved_referrals": [],
         "rejected_referrals": [],
         "escalated_referrals": [],
+        "handoff_referrals": [],
         "failed_referrals": [],
         "errors": [],
         "is_finished": False,
@@ -115,6 +116,7 @@ def select_next_referral_node(state: CaseworkerState, audit_logger: AuditLogger)
         "approval_token": None,
         "execution_result": None,
         "escalation_artifact": None,
+        "handoff_artifact": None,
     }
 
 
@@ -155,6 +157,92 @@ def fetch_history_node(state: CaseworkerState, history_client: HistoryClient, au
             "resident_history": None,
             "errors": state.get("errors", []) + [{"referral_id": ref.referral_id, "error": str(e)}],
         }
+
+
+def check_household_policy_node(state: CaseworkerState, policy_engine: PolicyEngine, audit_logger: AuditLogger) -> Dict[str, Any]:
+    """Evaluates ACA-2026/2 Section 3.9 restriction rule based on official household data."""
+    ref = Referral(**state["current_referral"])
+    res_hist = state.get("resident_history")
+    household = res_hist.get("household") if res_hist else None
+
+    decision_res, evidence = policy_engine.evaluate_household(household)
+    if decision_res and decision_res.decision == PolicyDecisionEnum.HANDOFF_REQUIRED:
+        audit_logger.log_event(
+            node="CHECK_HOUSEHOLD_POLICY",
+            event_type="HOUSEHOLD_POLICY_RESTRICTED",
+            status="HANDOFF_REQUIRED",
+            referral_id=ref.referral_id,
+            action=ref.requested_action,
+            policy_rule="3.9",
+            reason=decision_res.reason,
+            details={"evidence": evidence, "triage_note_generated": False},
+        )
+        return {"policy_decision": decision_res.model_dump(), "triage_note": None}
+
+    return {"policy_decision": None}
+
+
+def create_handoff_node(state: CaseworkerState, audit_logger: AuditLogger) -> Dict[str, Any]:
+    """Creates a Handoff artifact for caseworker review when Section 3.9 applies."""
+    import datetime
+    ref = Referral(**state["current_referral"])
+    pol_dict = state.get("policy_decision")
+    policy_res = PolicyDecisionResult(**pol_dict) if pol_dict else None
+    res_hist = state.get("resident_history", {})
+    household = res_hist.get("household", []) if res_hist else []
+
+    handoff_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "artifacts", "handoffs")
+    os.makedirs(handoff_dir, exist_ok=True)
+    file_path = os.path.join(handoff_dir, f"{ref.referral_id}.json")
+
+    handoff_data = {
+        "referral_id": ref.referral_id,
+        "resident_ref": ref.resident_ref,
+        "status": "HANDOFF_REQUIRED",
+        "policy": "ACA-2026/2",
+        "policy_rule": "3.9",
+        "reason": policy_res.reason if policy_res else "Household contains person under 18.",
+        "household_contains_minor": True,
+        "household_evidence": household,
+        "work_completed": [
+            "✓ Referral read",
+            "✓ Resident history retrieved",
+            "✓ Household composition determined",
+        ],
+        "work_not_completed": [
+            "✗ Draft triage note",
+        ],
+        "triage_note_generated": False,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(handoff_data, f, indent=2)
+
+    print("\n" + "=" * 50)
+    print(" HANDOFF TO CASEWORKER ")
+    print("=" * 50)
+    print(f"Referral:         {ref.referral_id}")
+    print(f"Resident:         {ref.resident_ref}")
+    print(f"Policy Rule:      ACA-2026/2 Section 3.9")
+    print(f"Reason:           Household contains person under 18.")
+    print(" *** TRIAGE NOTE NOT GENERATED ***")
+    print(f"✓ HANDOFF CREATED: {file_path}")
+    print("=" * 50 + "\n")
+
+    audit_logger.log_event(
+        node="CREATE_HANDOFF",
+        event_type="HANDOFF_CREATED",
+        status="HANDOFF_REQUIRED",
+        referral_id=ref.referral_id,
+        action=ref.requested_action,
+        policy_rule="3.9",
+        reason=policy_res.reason if policy_res else "Household contains person under 18.",
+        details={"handoff_file": file_path, "triage_note_generated": False},
+    )
+
+    handoffs = state.get("handoff_referrals", []) + [ref.referral_id]
+    return {"handoff_artifact": handoff_data, "handoff_referrals": handoffs}
+
 
 
 def analyze_referral_node(state: CaseworkerState, audit_logger: AuditLogger) -> Dict[str, Any]:
@@ -513,6 +601,7 @@ def finalize_run_node(state: CaseworkerState, audit_logger: AuditLogger) -> Dict
             "approved": len(state.get("approved_referrals", [])),
             "rejected": len(state.get("rejected_referrals", [])),
             "escalated": len(state.get("escalated_referrals", [])),
+            "handoffs": len(state.get("handoff_referrals", [])),
             "failed": len(state.get("failed_referrals", [])),
         },
     )

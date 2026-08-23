@@ -9,6 +9,13 @@ venv/
 ENV/
 .venv/
 
+docs/
+
+# AI-USAGE.md
+# DECISIONS.md
+audit/
+tests/
+
 # Environment variables
 .env
 
