@@ -1,0 +1,86 @@
+{
+  "policy_reference": "ACA-2026/1",
+  "in_force_from": "2026-03-01",
+  "department": "Calder County Department of Household Services",
+  "rules": [
+    {
+      "action_pattern": "Record change of address",
+      "decision": "ALLOWED",
+      "policy_section": "2.1 / 2.5",
+      "policy_rule": "Permitted without approval — record triage and client data updates",
+      "reason": "Recording address updates requested by resident is an administrative intake record permitted under Section 2.",
+      "required_authority": "Automated Assistant"
+    },
+    {
+      "action_pattern": "Flag for contact attempt",
+      "decision": "ALLOWED",
+      "policy_section": "2.6",
+      "policy_rule": "Permitted without approval — flag referral for human attention",
+      "reason": "Flagging unconfirmed whereabouts or returned mail for contact attempt is explicitly permitted under Section 2.6.",
+      "required_authority": "Automated Assistant"
+    },
+    {
+      "action_pattern": "Draft explanatory note",
+      "decision": "ALLOWED",
+      "policy_section": "2.4",
+      "policy_rule": "Permitted without approval — draft triage note / explanatory note for caseworker review",
+      "reason": "Drafting an explanatory note for caseworker review has no effect on the case until adopted, explicitly permitted under Section 2.4.",
+      "required_authority": "Automated Assistant"
+    },
+    {
+      "action_pattern": "Draft triage note for supervisor",
+      "decision": "ALLOWED",
+      "policy_section": "2.4",
+      "policy_rule": "Permitted without approval — draft triage note for supervisor",
+      "reason": "Drafting notes for supervisor review is permitted under Section 2.4.",
+      "required_authority": "Automated Assistant"
+    },
+    {
+      "action_pattern": "Review household composition",
+      "decision": "ALLOWED",
+      "policy_section": "2.2 / 2.4",
+      "policy_rule": "Permitted without approval — retrieve household composition and draft note",
+      "reason": "Retrieving household history and drafting household review notes is permitted under Section 2.2 and 2.4. (Any entitlement change resulting from household change requires approval under 3.1).",
+      "required_authority": "Automated Assistant"
+    },
+    {
+      "action_pattern": "Update payment details",
+      "decision": "APPROVAL_REQUIRED",
+      "policy_section": "3.4",
+      "policy_rule": "Requires supervisor approval — change to payment details",
+      "reason": "Section 3.4 strictly requires supervisor approval before changing bank or card payment details.",
+      "required_authority": "Supervisor"
+    },
+    {
+      "action_pattern": "Review award",
+      "decision": "APPROVAL_REQUIRED",
+      "policy_section": "3.1",
+      "policy_rule": "Requires supervisor approval — change to entitlement or award amount",
+      "reason": "Reviewing and adjusting award amounts directly affects entitlement under Section 3.1.",
+      "required_authority": "Supervisor"
+    },
+    {
+      "action_pattern": "Record income change",
+      "decision": "APPROVAL_REQUIRED",
+      "policy_section": "3.1",
+      "policy_rule": "Requires supervisor approval — change to eligibility/entitlement from income",
+      "reason": "Recording income change alters award calculation and eligibility under Section 3.1.",
+      "required_authority": "Supervisor"
+    },
+    {
+      "action_pattern": "Suspend assistance pending investigation",
+      "decision": "DENIED",
+      "policy_section": "3.2 / 3.7 / 4.1",
+      "policy_rule": "Forbidden & Requires Immediate Escalation — Award suspension and fraud assertion",
+      "reason": "Section 3.2 prohibits award suspension and Section 3.7 prohibits fraud findings without supervisor authority. Section 4.1 mandates immediate refusal and escalation.",
+      "required_authority": "Supervisor / Counter-Fraud Supervisor"
+    }
+  ],
+  "default_rule": {
+    "decision": "APPROVAL_REQUIRED",
+    "policy_section": "6.1",
+    "policy_rule": "Unclear / ambiguous action boundary rule",
+    "reason": "Under Policy Rule 6.1, where it is unclear whether an action falls within Section 3, it MUST be treated as requiring supervisor approval.",
+    "required_authority": "Supervisor"
+  }
+}
