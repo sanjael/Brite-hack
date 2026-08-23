@@ -1,0 +1,41 @@
+{
+  "referral_id": "RF-2026-0418",
+  "resident_ref": "R-20542",
+  "status": "HANDOFF_REQUIRED",
+  "policy": "ACA-2026/2",
+  "policy_rule": "3.9",
+  "reason": "Household contains a person under 18. Under ACA-2026/2 Section 3.9, triage drafting is restricted and requires caseworker involvement from the outset.",
+  "household_contains_minor": true,
+  "household_evidence": [
+    {
+      "name": "Sarah Delgado",
+      "date_of_birth": "1993-09-28",
+      "relationship": "Applicant"
+    },
+    {
+      "name": "Michael Crowley",
+      "date_of_birth": "2013-08-13",
+      "relationship": "Son/daughter"
+    },
+    {
+      "name": "Patricia Kessler",
+      "date_of_birth": "2002-09-29",
+      "relationship": "Spouse/partner"
+    },
+    {
+      "name": "Rosa Vance",
+      "date_of_birth": "2025-11-19",
+      "relationship": "Son/daughter"
+    }
+  ],
+  "work_completed": [
+    "\u2713 Referral read",
+    "\u2713 Resident history retrieved",
+    "\u2713 Household composition determined"
+  ],
+  "work_not_completed": [
+    "\u2717 Draft triage note"
+  ],
+  "triage_note_generated": false,
+  "timestamp": "2026-08-23T17:09:41.028052+00:00"
+}

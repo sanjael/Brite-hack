@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calder County DHS — Automated Casework Assistant</title>
+  <meta name="description" content="Automated Casework Assistant Morning Referral Run with Hard Policy Guardrails and ACA-2026/2 Child Safeguarding Compliance.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- =========================================================================
+       APP HEADER & CONTROLS
+       ========================================================================= -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-wrapper">
+        <div class="brand-crest">🏛️</div>
+        <div class="brand-info">
+          <h1>Calder County DHS</h1>
+          <p>Automated Casework Assistant — Morning Run Console</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <span class="status-badge-live">SYSTEM ACTIVE</span>
+        <div class="run-id-tag" id="header-run-id">RUN: INITIALIZING</div>
+        <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Dark/Light Mode">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       MAIN CONTENT CONTAINER
+       ========================================================================= -->
+  <main class="main-wrapper">
+
+    <!-- KPI Metric Cards Strip -->
+    <section class="kpi-strip">
+      <div class="kpi-card indigo">
+        <div class="kpi-header">
+          <span class="kpi-title">Total Referrals</span>
+          <span class="kpi-icon">📋</span>
+        </div>
+        <div class="kpi-value" id="kpi-total">12</div>
+        <div class="kpi-subtitle">Overnight Intake</div>
+      </div>
+
+      <div class="kpi-card emerald">
+        <div class="kpi-header">
+          <span class="kpi-title">Autonomous (Sec 2)</span>
+          <span class="kpi-icon">⚡</span>
+        </div>
+        <div class="kpi-value" style="color:var(--accent-success);" id="kpi-autonomous">0</div>
+        <div class="kpi-subtitle">Permitted Without Gate</div>
+      </div>
+
+      <div class="kpi-card amber">
+        <div class="kpi-header">
+          <span class="kpi-title">Supervisor Gates (Sec 3)</span>
+          <span class="kpi-icon">🔒</span>
+        </div>
+        <div class="kpi-value" style="color:var(--accent-warning);" id="kpi-approved">0</div>
+        <div class="kpi-subtitle">HMAC Authorized</div>
+      </div>
+
+      <div class="kpi-card cyan">
+        <div class="kpi-header">
+          <span class="kpi-title">Minor Handoffs (Sec 3.9)</span>
+          <span class="kpi-icon">🛡️</span>
+        </div>
+        <div class="kpi-value" style="color:var(--accent-info);" id="kpi-handoffs">0</div>
+        <div class="kpi-subtitle">ACA-2026/2 Safeguard</div>
+      </div>
+
+      <div class="kpi-card rose">
+        <div class="kpi-header">
+          <span class="kpi-title">Escalated (Sec 4)</span>
+          <span class="kpi-icon">⚠️</span>
+        </div>
+        <div class="kpi-value" style="color:var(--accent-danger);" id="kpi-escalated">0</div>
+        <div class="kpi-subtitle">Hard Prohibitions</div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-navigation">
+      <button class="tab-btn active" data-tab="tab-workspace">⚡ Morning Run Workspace</button>
+      <button class="tab-btn" data-tab="tab-queue">📋 Referral Queue Explorer</button>
+      <button class="tab-btn" data-tab="tab-policy">🛡️ Policy &amp; Guardrails Matrix</button>
+      <button class="tab-btn" data-tab="tab-artifacts">📁 Handoffs &amp; Escalations</button>
+      <button class="tab-btn" data-tab="tab-analytics">📊 Audit Telemetry &amp; Analytics</button>
+    </nav>
+
+    <!-- =======================================================================
+         TAB 1: MORNING RUN WORKSPACE
+         ======================================================================= -->
+    <section class="tab-content active" id="tab-workspace">
+      
+      <!-- Stepper Progress Bar -->
+      <div class="stepper-bar">
+        <div class="step-node active" id="step-1"><div class="step-num">1</div> Intake</div>
+        <div class="step-node" id="step-2"><div class="step-num">2</div> History Lookup</div>
+        <div class="step-node" id="step-3"><div class="step-num">3</div> Minor Safeguard (§3.9)</div>
+        <div class="step-node" id="step-4"><div class="step-num">4</div> AI Reasoning</div>
+        <div class="step-node" id="step-5"><div class="step-num">5</div> Policy Guardrail Gate</div>
+      </div>
+
+      <!-- Controls Action Bar -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:16px 20px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <button class="btn btn-primary" id="btn-start-queue">🚀 Start / Reset Morning Run</button>
+          <button class="btn btn-secondary" id="btn-auto-run">🤖 Auto-Process Safe Cases</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-size:0.85rem; color:var(--text-secondary); font-weight:600;">Queue Progress:</span>
+          <span class="mono" style="font-weight:700; color:var(--accent-primary);" id="queue-progress-text">0 / 12</span>
+        </div>
+      </div>
+
+      <!-- Workspace Dual Column Grid -->
+      <div class="workspace-grid">
+        
+        <!-- LEFT COLUMN: Referral Intake & Demographics -->
+        <div class="col-left">
+          
+          <!-- Referral Details Card -->
+          <div class="panel-card" id="card-referral">
+            <div class="panel-card-header">
+              <div class="panel-card-title">
+                <span>📄</span> Referral Intake Summary
+              </div>
+              <span class="badge-pill badge-allowed" id="referral-urgency-badge">STANDARD URGENCY</span>
+            </div>
+            
+            <div style="margin-bottom:14px;">
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Referral ID &amp; Resident</div>
+              <div style="display:flex; gap:10px; margin-top:2px;">
+                <span class="mono" style="font-weight:700; color:var(--accent-primary);" id="ref-id-val">RF-2026-0412</span>
+                <span style="color:var(--text-muted);">|</span>
+                <span class="mono" style="color:var(--text-secondary);" id="resident-ref-val">R-20500</span>
+              </div>
+            </div>
+
+            <div style="margin-bottom:14px;">
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Summary Narrative</div>
+              <p style="font-size:0.9rem; color:var(--text-primary); margin-top:2px; line-height:1.4;" id="ref-summary-val">
+                Resident reports rent arrears following reduction in hours. Requests review of award.
+              </p>
+            </div>
+
+            <div style="background:var(--bg-surface-elevated); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:12px 14px;">
+              <div style="font-size:0.72rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Requested Action</div>
+              <div class="mono" style="font-size:0.92rem; font-weight:700; color:var(--accent-primary);" id="ref-action-val">Review award</div>
+            </div>
+          </div>
+
+          <!-- Resident History Card -->
+          <div class="panel-card" id="card-resident">
+            <div class="panel-card-header">
+              <div class="panel-card-title">
+                <span>👤</span> Resident Profile &amp; Household
+              </div>
+              <span class="badge-pill" style="background:var(--bg-surface-elevated); color:var(--text-secondary);" id="resident-status-badge">ACTIVE</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+              <div style="background:var(--bg-surface-elevated); padding:10px 14px; border-radius:var(--radius-md);">
+                <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">District Office</div>
+                <div style="font-size:0.95rem; font-weight:700;" id="resident-district-val">Ash Hill</div>
+              </div>
+              <div style="background:var(--bg-surface-elevated); padding:10px 14px; border-radius:var(--radius-md);">
+                <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Monthly Award</div>
+                <div style="font-size:0.95rem; font-weight:700; color:var(--accent-success);" id="resident-award-val">£988.04</div>
+              </div>
+            </div>
+
+            <div style="font-size:0.78rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:8px;">
+              Household Composition
+            </div>
+            <table class="styled-table">
+              <thead>
+                <tr>
+                  <th>Member Name</th>
+                  <th>Relationship</th>
+                  <th>DOB</th>
+                  <th>Age</th>
+                  <th>Safeguard</th>
+                </tr>
+              </thead>
+              <tbody id="household-tbody">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+
+            <details style="margin-top:16px; font-size:0.85rem;">
+              <summary style="cursor:pointer; font-weight:600; color:var(--accent-primary);">View Case Event Timeline</summary>
+              <div class="timeline-track" id="timeline-events-container">
+                <!-- Injected via JavaScript -->
+              </div>
+            </details>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Policy Evaluation & Execution Station -->
+        <div class="col-right">
+
+          <!-- Dynamic Action / Safeguard Container -->
+          <div class="panel-card" id="card-execution-engine">
+            <div class="panel-card-header">
+              <div class="panel-card-title" id="engine-card-title">
+                <span>🛡️</span> Policy Decision &amp; Execution Gate
+              </div>
+              <span class="badge-pill badge-allowed" id="engine-policy-badge">EVALUATING</span>
+            </div>
+
+            <!-- Dynamic Decision Content (Injected by JS) -->
+            <div id="engine-dynamic-view">
+              <!-- Content rendered based on case (Safe / Minor Handoff / Protected Gate / Fraud Escalation) -->
+            </div>
+          </div>
+
+          <!-- AI Reasoning Analysis Card -->
+          <div class="panel-card" id="card-ai-reasoning">
+            <div class="panel-card-header">
+              <div class="panel-card-title">
+                <span>🧠</span> AI Triage Reasoning (Llama-3.3-70B)
+              </div>
+              <span class="badge-pill badge-allowed" id="ai-status-pill">REASONING COMPLETE</span>
+            </div>
+
+            <div style="margin-bottom:14px;">
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Situation Summary</div>
+              <p style="font-size:0.9rem; line-height:1.4; margin-top:2px;" id="ai-summary-text">
+                Waiting to evaluate current case intake...
+              </p>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div style="background:var(--bg-surface-elevated); padding:10px 12px; border-radius:var(--radius-md);">
+                <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Assessed Risk</div>
+                <div style="font-size:0.92rem; font-weight:700;" id="ai-risk-val">STANDARD</div>
+              </div>
+              <div style="background:var(--bg-surface-elevated); padding:10px 12px; border-radius:var(--radius-md);">
+                <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Recommended Action</div>
+                <div style="font-size:0.92rem; font-weight:700; color:var(--accent-primary);" id="ai-action-val">Review award</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         TAB 2: REFERRAL QUEUE EXPLORER
+         ======================================================================= -->
+    <section class="tab-content" id="tab-queue">
+      <div class="panel-card">
+        <div class="panel-card-header">
+          <div class="panel-card-title">
+            <span>📋</span> Overnight Referral Intake Matrix (12 Cases)
+          </div>
+          <span class="mono" style="font-size:0.8rem; color:var(--text-muted);">Source: referral-queue.json</span>
+        </div>
+
+        <div style="display:flex; gap:16px; margin-bottom:18px; flex-wrap:wrap;">
+          <input type="text" id="queue-search" placeholder="🔍 Search ID, resident ref, requested action, keywords..." style="flex:1; min-width:280px; background:var(--bg-surface-elevated); border:1px solid var(--border-medium); border-radius:var(--radius-md); padding:10px 16px; color:var(--text-primary); font-family:var(--font-main);">
+          <select id="urgency-filter" style="background:var(--bg-surface-elevated); border:1px solid var(--border-medium); border-radius:var(--radius-md); padding:10px 16px; color:var(--text-primary); font-family:var(--font-main);">
+            <option value="ALL">All Urgencies</option>
+            <option value="High">High Urgency</option>
+            <option value="Standard">Standard Urgency</option>
+            <option value="Low">Low Urgency</option>
+          </select>
+        </div>
+
+        <table class="styled-table" id="queue-table">
+          <thead>
+            <tr>
+              <th>Referral ID</th>
+              <th>Resident Ref</th>
+              <th>Source</th>
+              <th>Requested Action</th>
+              <th>Urgency</th>
+              <th>Intake Summary</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="queue-table-body">
+            <!-- Injected via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         TAB 3: POLICY & GUARDRAILS MATRIX
+         ======================================================================= -->
+    <section class="tab-content" id="tab-policy">
+      <div class="panel-card">
+        <div class="panel-card-header">
+          <div class="panel-card-title">
+            <span>🛡️</span> Calder County Policy Authority Matrix (ACA-2026/1 &amp; ACA-2026/2)
+          </div>
+          <span class="badge-pill badge-allowed">DETERMINISTIC ENGINE</span>
+        </div>
+
+        <!-- 4 Policy Buckets -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:24px;">
+          <div style="background:var(--accent-success-bg); border:1px solid var(--accent-success-border); border-radius:var(--radius-lg); padding:20px;">
+            <div style="font-weight:800; color:var(--accent-success); font-size:1.05rem; margin-bottom:6px;">
+              🟢 SECTION 2: AUTONOMOUS
+            </div>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:10px;">
+              Safe, routine actions permitted without human gate.
+            </p>
+            <ul style="font-size:0.82rem; color:var(--text-primary); padding-left:18px; line-height:1.6;">
+              <li>Record change of address (2.1)</li>
+              <li>Record contact preferences (2.2)</li>
+              <li>Log received evidence (2.3)</li>
+              <li>Draft explanatory note (2.4)</li>
+              <li>Flag for contact attempt (2.5)</li>
+              <li>Review household composition (2.6)</li>
+              <li>Draft triage note for supervisor (2.7)</li>
+            </ul>
+          </div>
+
+          <div style="background:var(--accent-warning-bg); border:1px solid var(--accent-warning-border); border-radius:var(--radius-lg); padding:20px;">
+            <div style="font-weight:800; color:var(--accent-warning); font-size:1.05rem; margin-bottom:6px;">
+              🟡 SECTION 3: SUPERVISOR GATE
+            </div>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:10px;">
+              Modifies financial entitlement. Requires HMAC token.
+            </p>
+            <ul style="font-size:0.82rem; color:var(--text-primary); padding-left:18px; line-height:1.6;">
+              <li>Review award amount (3.1)</li>
+              <li>Record income changes (3.3)</li>
+              <li>Update payment bank details (3.6)</li>
+              <li>Record overpayment recovery plan (3.8)</li>
+            </ul>
+          </div>
+
+          <div style="background:var(--accent-info-bg); border:1px solid var(--accent-info-border); border-radius:var(--radius-lg); padding:20px;">
+            <div style="font-weight:800; color:var(--accent-info); font-size:1.05rem; margin-bottom:6px;">
+              🔵 SECTION 3.9: MINOR SAFEGUARD
+            </div>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:10px;">
+              ACA-2026/2 Child Safeguarding Mandate.
+            </p>
+            <ul style="font-size:0.82rem; color:var(--text-primary); padding-left:18px; line-height:1.6;">
+              <li>Person &lt; 18 in household: <b>Triage drafting restricted</b></li>
+              <li>Creates caseworker handoff artifact directly</li>
+              <li>Protects minors from automated bias</li>
+            </ul>
+          </div>
+
+          <div style="background:var(--accent-danger-bg); border:1px solid var(--accent-danger-border); border-radius:var(--radius-lg); padding:20px;">
+            <div style="font-weight:800; color:var(--accent-danger); font-size:1.05rem; margin-bottom:6px;">
+              🔴 SECTION 4 &amp; 3.2: PROHIBITED
+            </div>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:10px;">
+              High-risk or malicious side effects escalated.
+            </p>
+            <ul style="font-size:0.82rem; color:var(--text-primary); padding-left:18px; line-height:1.6;">
+              <li>Suspend assistance on fraud allegation (3.2/3.7/4.1)</li>
+              <li>Terminate resident benefit award</li>
+              <li>Ambiguous actions fallback (Rule 6.1)</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Interactive Policy Sandbox Tester -->
+        <div style="background:var(--bg-surface-elevated); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:20px;">
+          <h3 style="font-size:1rem; margin-bottom:8px;">🧪 Interactive Policy Sandbox Tester</h3>
+          <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:12px;">
+            Test any requested action string against the Calder County Deterministic Policy Engine:
+          </p>
+          <div style="display:flex; gap:12px; margin-bottom:14px;">
+            <input type="text" id="sandbox-action-input" placeholder="e.g. Update payment details, Record change of address, Suspend assistance..." style="flex:1; background:var(--bg-surface); border:1px solid var(--border-medium); border-radius:var(--radius-md); padding:10px 14px; color:var(--text-primary); font-family:var(--font-mono);">
+            <button class="btn btn-primary" id="btn-test-policy">Test Policy Rule</button>
+          </div>
+          <div id="sandbox-result" style="display:none; padding:14px; border-radius:var(--radius-md); font-size:0.9rem;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         TAB 4: HANDOFFS & ESCALATIONS
+         ======================================================================= -->
+    <section class="tab-content" id="tab-artifacts">
+      <div class="panel-card">
+        <div class="panel-card-header">
+          <div class="panel-card-title">
+            <span>📁</span> Governance &amp; Safety Artifacts Inspector
+          </div>
+          <button class="btn btn-secondary" id="btn-refresh-artifacts" style="padding:6px 12px; font-size:0.8rem;">🔄 Refresh Files</button>
+        </div>
+
+        <div style="display:flex; gap:12px; margin-bottom:18px;">
+          <button class="btn btn-primary" id="btn-view-handoffs" style="padding:8px 16px; font-size:0.85rem;">🛡️ Caseworker Handoffs (ACA-2026/2)</button>
+          <button class="btn btn-secondary" id="btn-view-escalations" style="padding:8px 16px; font-size:0.85rem;">⚠️ Escalation Dossiers (Section 4)</button>
+        </div>
+
+        <div id="artifacts-cards-container">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         TAB 5: AUDIT TELEMETRY & ANALYTICS
+         ======================================================================= -->
+    <section class="tab-content" id="tab-analytics">
+      <div class="panel-card">
+        <div class="panel-card-header">
+          <div class="panel-card-title">
+            <span>📊</span> Audit Telemetry &amp; Compliance Logs
+          </div>
+          <button class="btn btn-secondary" id="btn-export-audit-json" style="padding:6px 12px; font-size:0.8rem;">📥 Export Audit JSON</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-bottom:20px;">
+          <div style="background:var(--bg-surface-elevated); padding:16px; border-radius:var(--radius-md);">
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Autonomous Automation Rate</div>
+            <div style="font-size:1.8rem; font-weight:800; color:var(--accent-success);" id="analytics-auto-rate">50.0%</div>
+            <div style="font-size:0.75rem; color:var(--text-secondary);">Section 2 Routine Actions</div>
+          </div>
+          <div style="background:var(--bg-surface-elevated); padding:16px; border-radius:var(--radius-md);">
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Supervisor Gate Interventions</div>
+            <div style="font-size:1.8rem; font-weight:800; color:var(--accent-warning);" id="analytics-gate-rate">25.0%</div>
+            <div style="font-size:0.75rem; color:var(--text-secondary);">Cryptographic HMAC Verified</div>
+          </div>
+          <div style="background:var(--bg-surface-elevated); padding:16px; border-radius:var(--radius-md);">
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Safeguard &amp; Escalation Intercepts</div>
+            <div style="font-size:1.8rem; font-weight:800; color:var(--accent-info);" id="analytics-guard-rate">25.0%</div>
+            <div style="font-size:0.75rem; color:var(--text-secondary);">Minor Restrict &amp; Fraud Refusals</div>
+          </div>
+        </div>
+
+        <h4 style="font-size:0.95rem; margin-bottom:8px;">Live Run Execution Log</h4>
+        <div style="background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:16px; font-family:var(--font-mono); font-size:0.8rem; color:var(--text-secondary); max-height:280px; overflow-y:auto;" id="console-logs-box">
+          [System Ready] Calder County DHS Caseworker Web Engine Connected.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       MODAL: CRYPTOGRAPHIC SUPERVISOR APPROVAL GATE
+       ========================================================================= -->
+  <div class="modal-overlay" id="supervisor-modal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div style="font-size:1.25rem; font-weight:800; color:var(--accent-warning); display:flex; align-items:center; gap:8px;">
+          <span>🔒</span> Cryptographic Supervisor Approval Gate
+        </div>
+        <span class="badge-pill badge-approval">SECTION 3 PROTECTED</span>
+      </div>
+
+      <div class="alert-box warning" style="margin-top:0;">
+        <div class="alert-title">⚠️ *** NO ACTION HAS BEEN EXECUTED ***</div>
+        <div class="alert-desc">
+          This action mutates resident financial benefits or bank details. Under <b>Policy ACA-2026/1 Section 3</b>, execution is physically impossible without a valid HMAC-SHA256 supervisor signature token.
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px; font-size:0.9rem;">
+        <div><b>Referral:</b> <span class="mono" id="modal-ref-id">RF-2026-0414</span> (<span id="modal-res-ref">R-20514</span>)</div>
+        <div><b>Protected Action:</b> <span class="mono" style="color:var(--accent-warning); font-weight:700;" id="modal-action-name">Review award</span></div>
+        <div style="margin-top:4px; font-size:0.85rem; color:var(--text-secondary);" id="modal-policy-reason">
+          Reviewing and adjusting award amounts directly affects entitlement under Section 3.1.
+        </div>
+      </div>
+
+      <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Cryptographic HMAC Signature Token Preview:</div>
+      <div class="crypto-hash-box" id="modal-token-preview">
+        HMAC-SHA256: SIGNATURE_PENDING_SUPERVISOR_CONSENT...
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:20px;">
+        <button class="btn btn-success" id="btn-modal-approve">✅ Approve &amp; Sign HMAC Token</button>
+        <button class="btn btn-danger" id="btn-modal-reject">✖ Reject &amp; Escalate to Board</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

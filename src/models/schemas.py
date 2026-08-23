@@ -7,6 +7,7 @@ class PolicyDecisionEnum(str, Enum):
     ALLOWED = "ALLOWED"
     APPROVAL_REQUIRED = "APPROVAL_REQUIRED"
     DENIED = "DENIED"
+    HANDOFF_REQUIRED = "HANDOFF_REQUIRED"
 
 
 class Referral(BaseModel):
@@ -102,3 +103,18 @@ class ExecutionResult(BaseModel):
     execution_timestamp: str
     details: Dict[str, Any] = Field(default_factory=dict)
     approval_token_used: Optional[str] = None
+
+
+class HandoffRecord(BaseModel):
+    referral_id: str
+    resident_ref: str
+    status: str = "HANDOFF_REQUIRED"
+    policy: str = "ACA-2026/2"
+    policy_rule: str = "3.9"
+    reason: str
+    household_contains_minor: bool
+    household_evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    work_completed: List[str] = Field(default_factory=list)
+    triage_note_generated: bool = False
+    timestamp: str
+

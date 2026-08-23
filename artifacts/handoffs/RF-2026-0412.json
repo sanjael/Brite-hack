@@ -1,0 +1,31 @@
+{
+  "referral_id": "RF-2026-0412",
+  "resident_ref": "R-20500",
+  "status": "HANDOFF_REQUIRED",
+  "policy": "ACA-2026/2",
+  "policy_rule": "3.9",
+  "reason": "Household contains a person under 18. Under ACA-2026/2 Section 3.9, triage drafting is restricted and requires caseworker involvement from the outset.",
+  "household_contains_minor": true,
+  "household_evidence": [
+    {
+      "name": "Elizabeth Whitlock",
+      "date_of_birth": "1964-05-25",
+      "relationship": "Applicant"
+    },
+    {
+      "name": "William Iverson",
+      "date_of_birth": "2021-02-26",
+      "relationship": "Son/daughter"
+    }
+  ],
+  "work_completed": [
+    "\u2713 Referral read",
+    "\u2713 Resident history retrieved",
+    "\u2713 Household composition determined"
+  ],
+  "work_not_completed": [
+    "\u2717 Draft triage note"
+  ],
+  "triage_note_generated": false,
+  "timestamp": "2026-08-23T17:09:28.563881+00:00"
+}
