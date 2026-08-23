@@ -1,5 +1,5 @@
-from enum import Enum
 from typing import List, Optional, Dict, Any
+from enum import Enum
 from pydantic import BaseModel, Field
 
 
@@ -7,7 +7,6 @@ class PolicyDecisionEnum(str, Enum):
     ALLOWED = "ALLOWED"
     APPROVAL_REQUIRED = "APPROVAL_REQUIRED"
     DENIED = "DENIED"
-    HANDOFF_REQUIRED = "HANDOFF_REQUIRED"
 
 
 class Referral(BaseModel):
@@ -34,12 +33,12 @@ class CaseEvent(BaseModel):
 
 class ResidentHistory(BaseModel):
     resident_ref: str
-    status: str = "Active"
-    benefit_code: str = "UNKNOWN"
-    district: str = "UNKNOWN"
-    award_monthly: float = 0.0
-    household: List[HouseholdMember] = Field(default_factory=list)
-    events: List[CaseEvent] = Field(default_factory=list)
+    status: str
+    benefit_code: str
+    district: str
+    award_monthly: float
+    household: List[HouseholdMember] = []
+    events: List[CaseEvent] = []
 
 
 class LLMAnalysis(BaseModel):
@@ -47,7 +46,8 @@ class LLMAnalysis(BaseModel):
     relevant_history: List[str] = Field(default_factory=list)
     proposed_action: str
     reasoning: str
-    confidence: float = 0.95
+    confidence: float = 1.0
+    uncertainty_notes: Optional[str] = None
 
 
 class TriageNote(BaseModel):
@@ -63,12 +63,13 @@ class TriageNote(BaseModel):
     reasoning: str
 
 
-class PolicyDecision(BaseModel):
+class PolicyDecisionResult(BaseModel):
     decision: PolicyDecisionEnum
     action: str
     policy_section: str
     policy_rule: str
     reason: str
+    required_authority: str
 
 
 class ApprovalToken(BaseModel):
@@ -77,7 +78,21 @@ class ApprovalToken(BaseModel):
     action: str
     run_id: str
     approved_at: str
+    approved_by: str = "Supervisor"
     signature: str
+
+
+class AuditEvent(BaseModel):
+    timestamp: str
+    run_id: str
+    referral_id: Optional[str] = None
+    node: str
+    event_type: str
+    action: Optional[str] = None
+    status: str
+    policy_rule: Optional[str] = None
+    reason: Optional[str] = None
+    details: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ExecutionResult(BaseModel):
@@ -87,17 +102,3 @@ class ExecutionResult(BaseModel):
     execution_timestamp: str
     details: Dict[str, Any] = Field(default_factory=dict)
     approval_token_used: Optional[str] = None
-
-
-class HandoffRecord(BaseModel):
-    referral_id: str
-    resident_ref: str
-    status: str = "HANDOFF_REQUIRED"
-    policy: str = "ACA-2026/2"
-    policy_rule: str = "3.9"
-    reason: str
-    household_contains_minor: bool
-    household_evidence: List[Dict[str, Any]] = Field(default_factory=list)
-    work_completed: List[str] = Field(default_factory=list)
-    triage_note_generated: bool = False
-    timestamp: str

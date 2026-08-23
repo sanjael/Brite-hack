@@ -25,7 +25,7 @@ def main():
     print("\n" + "=" * 60)
     print(" CALDER COUNTY DEPARTMENT OF HOUSEHOLD SERVICES ")
     print(" Automated Casework Assistant — Morning Referral Run ")
-    print(" Policy Reference: ACA-2026/1 ")
+    print(" Policy Reference: ACA-2026/1 (Amended by ACA-2026/2) ")
     print("=" * 60)
     print(f"Run ID:          {run_id}")
     print(f"Referral Queue:  {args.queue_file}")
@@ -61,6 +61,7 @@ def main():
         "approved": len(final_state.get("approved_referrals", [])),
         "rejected": len(final_state.get("rejected_referrals", [])),
         "escalated": len(final_state.get("escalated_referrals", [])),
+        "handoffs": len(final_state.get("handoff_referrals", [])),
         "failed": len(final_state.get("failed_referrals", [])),
         "errors": final_state.get("errors", []),
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -77,6 +78,7 @@ def main():
     print(f"Approved:            {run_summary['approved']}")
     print(f"Rejected:            {run_summary['rejected']}")
     print(f"Escalated:           {run_summary['escalated']}")
+    print(f"Handoffs (3.9):      {run_summary['handoffs']}")
     print(f"Failed:              {run_summary['failed']}")
     print("-" * 60)
     print(f"Audit log artifact:  {audit_file}")

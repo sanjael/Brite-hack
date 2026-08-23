@@ -40,11 +40,13 @@ class WorkflowState(TypedDict, total=False):
     approval_token: Optional[Dict[str, Any]]
     execution_result: Optional[Dict[str, Any]]
     escalation_file: Optional[str]
+    handoff_file: Optional[str]
 
     completed_referrals: List[str]
     approved_referrals: List[str]
     rejected_referrals: List[str]
     escalated_referrals: List[str]
+    handoff_referrals: List[str]
     failed_referrals: List[str]
     errors: List[Dict[str, Any]]
     is_finished: bool
@@ -89,6 +91,7 @@ def load_queue_node(state: WorkflowState) -> Dict[str, Any]:
         "approved_referrals": [],
         "rejected_referrals": [],
         "escalated_referrals": [],
+        "handoff_referrals": [],
         "failed_referrals": [],
         "errors": [],
         "is_finished": False,
@@ -111,6 +114,7 @@ def select_referral_node(state: WorkflowState) -> Dict[str, Any]:
         "approval_token": None,
         "execution_result": None,
         "escalation_file": None,
+        "handoff_file": None,
     }
 
 
@@ -129,6 +133,63 @@ def fetch_history_node(state: WorkflowState) -> Dict[str, Any]:
             "errors": state.get("errors", []) + [{"referral_id": ref.referral_id, "error": str(e)}],
             "failed_referrals": state.get("failed_referrals", []) + [ref.referral_id],
         }
+
+
+def check_household_policy_node(state: WorkflowState) -> Dict[str, Any]:
+    ref = Referral(**state["current_referral"])
+    res_hist = state.get("resident_history")
+    household = res_hist.get("household") if res_hist else None
+
+    decision, evidence = PolicyEngine().evaluate_household(household)
+    if decision and decision.decision == PolicyDecisionEnum.HANDOFF_REQUIRED:
+        print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Policy decision: {decision.decision.value} (Section {decision.policy_section})")
+        print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {decision.reason}")
+        return {"policy_decision": decision.model_dump(), "triage_note": None}
+
+    return {"policy_decision": None}
+
+
+def create_handoff_node(state: WorkflowState) -> Dict[str, Any]:
+    ref = Referral(**state["current_referral"])
+    policy_dict = state.get("policy_decision")
+    policy = PolicyDecision(**policy_dict) if policy_dict else None
+    res_hist = state.get("resident_history", {})
+    household = res_hist.get("household", []) if res_hist else []
+
+    handoff_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "artifacts", "handoffs")
+    os.makedirs(handoff_dir, exist_ok=True)
+    file_path = os.path.join(handoff_dir, f"{ref.referral_id}.json")
+
+    handoff_data = {
+        "referral_id": ref.referral_id,
+        "resident_ref": ref.resident_ref,
+        "status": "HANDOFF_REQUIRED",
+        "policy": "ACA-2026/2",
+        "policy_rule": "3.9",
+        "reason": policy.reason if policy else "Household contains person under 18.",
+        "household_contains_minor": True,
+        "household_evidence": household,
+        "work_completed": [
+            "✓ Referral read",
+            "✓ Resident history retrieved",
+            "✓ Household composition determined",
+        ],
+        "work_not_completed": [
+            "✗ Draft triage note",
+        ],
+        "triage_note_generated": False,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(handoff_data, f, indent=2)
+
+    print("\n*** TRIAGE NOTE NOT GENERATED ***")
+    print(f"✓ HANDOFF CREATED:\n{file_path}\n")
+
+    return {
+        "handoff_file": file_path,
+        "handoff_referrals": state.get("handoff_referrals", []) + [ref.referral_id],
+    }
 
 
 def generate_triage_node(state: WorkflowState) -> Dict[str, Any]:
@@ -258,6 +319,8 @@ def build_workflow_graph():
     builder.add_node("load_queue", load_queue_node)
     builder.add_node("select_referral", select_referral_node)
     builder.add_node("fetch_history", fetch_history_node)
+    builder.add_node("check_household_policy", check_household_policy_node)
+    builder.add_node("create_handoff", create_handoff_node)
     builder.add_node("generate_triage", generate_triage_node)
     builder.add_node("check_policy", check_policy_node)
     builder.add_node("human_approval_gate", human_approval_gate_node)
@@ -269,7 +332,17 @@ def build_workflow_graph():
     builder.add_edge("load_queue", "select_referral")
 
     builder.add_conditional_edges("select_referral", lambda s: END if s.get("is_finished") else "fetch_history", {END: END, "fetch_history": "fetch_history"})
-    builder.add_conditional_edges("fetch_history", lambda s: "next_referral" if not s.get("resident_history") else "generate_triage", {"next_referral": "next_referral", "generate_triage": "generate_triage"})
+    builder.add_conditional_edges("fetch_history", lambda s: "next_referral" if not s.get("resident_history") else "check_household_policy", {"next_referral": "next_referral", "check_household_policy": "check_household_policy"})
+
+    def route_household_policy(s: WorkflowState) -> str:
+        p = s.get("policy_decision")
+        if p and p.get("decision") == PolicyDecisionEnum.HANDOFF_REQUIRED.value:
+            return "create_handoff"
+        return "generate_triage"
+
+    builder.add_conditional_edges("check_household_policy", route_household_policy, {"create_handoff": "create_handoff", "generate_triage": "generate_triage"})
+    builder.add_edge("create_handoff", "next_referral")
+
     builder.add_edge("generate_triage", "check_policy")
 
     def route_policy(s: WorkflowState) -> str:
@@ -288,3 +361,4 @@ def build_workflow_graph():
     builder.add_edge("next_referral", "select_referral")
 
     return builder.compile()
+
