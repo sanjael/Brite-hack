@@ -166,7 +166,7 @@ pip install -r requirements.txt
 ### Step 1: Start Resident History API
 In terminal 1:
 ```bash
-python3 services/history_service.py --port 8083
+python services/history_service.py --port 8083
 ```
 *(PowerShell: `python services/history_service.py --port 8083`)*
 
