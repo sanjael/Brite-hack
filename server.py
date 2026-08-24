@@ -40,6 +40,7 @@ from app.graph import (
     create_handoff_node,
     WorkflowState,
 )
+from app.security_scanner import scan_ingress_security
 
 load_dotenv()
 
@@ -187,6 +188,13 @@ class CaseworkerAPIHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         body = self._read_json()
+
+        # 0. SECURITY & PROMPT INJECTION SCANNER (INNOVATION MODULE)
+        if path == "/api/security_scan":
+            text = body.get("text", "")
+            scan_result = scan_ingress_security(text)
+            self._send_json(scan_result.model_dump())
+            return
 
         # 1. EVALUATE ACTION POLICY
         if path == "/api/evaluate_action":
